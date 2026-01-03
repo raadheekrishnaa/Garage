@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RK Multi Brand Car Garage - Job Cards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <header class="bg-blue-900 text-white p-6 shadow-lg">
+        <h1 class="text-3xl font-bold text-center">RK MULTI BRAND CAR GARAGE</h1>
+        <p class="text-center text-blue-200">Job Cards • Inventory • Finance</p>
+    </header>
+
+    <div class="container mx-auto p-4 flex flex-wrap">
+        <nav class="w-full md:w-1/4 bg-white p-4 rounded-lg shadow mb-4 h-fit">
+            <ul class="space-y-2">
+                <li><button onclick="showSection('jobcards')" class="w-full text-left p-3 hover:bg-blue-100 rounded font-bold text-blue-800 border-b">📋 Active Job Cards</button></li>
+                <li><button onclick="showSection('customers')" class="w-full text-left p-3 hover:bg-blue-100 rounded font-semibold border-b">👤 Customer List</button></li>
+                <li><button onclick="showSection('inventory')" class="w-full text-left p-3 hover:bg-blue-100 rounded font-semibold border-b">🔧 Spare Parts Stock</button></li>
+                <li><button onclick="showSection('finance')" class="w-full text-left p-3 hover:bg-blue-100 rounded font-semibold">💰 Money In/Out</button></li>
+            </ul>
+        </nav>
+
+        <main class="w-full md:w-3/4 md:pl-6">
+            
+            <section id="jobcards" class="content-section">
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2 text-blue-900">Create New Job Card</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input id="jc-name" type="text" placeholder="Customer Name" class="border p-2 rounded">
+                        <input id="jc-plate" type="text" placeholder="License Plate No (e.g. TN-01-AB-1234)" class="border p-2 rounded">
+                        <input id="jc-car" type="text" placeholder="Car Model (e.g. Maruti Swift)" class="border p-2 rounded">
+                        <input id="jc-entry" type="date" class="border p-2 rounded" title="Date of Entry">
+                        <textarea id="jc-issue" placeholder="The Issue (What is the problem?)" class="border p-2 rounded col-span-2"></textarea>
+                        <textarea id="jc-solution" placeholder="The Solution (What was fixed?)" class="border p-2 rounded col-span-2"></textarea>
+                        <div class="flex gap-2 col-span-2">
+                            <span class="pt-2 font-semibold">Delivery Date:</span>
+                            <input id="jc-delivery" type="date" class="border p-2 rounded flex-grow">
+                        </div>
+                        <button onclick="addJobCard()" class="bg-blue-700 text-white p-3 rounded hover:bg-blue-800 font-bold col-span-2 uppercase">Create Job Card</button>
+                    </div>
+                </div>
+
+                <h2 class="text-xl font-bold mb-4 text-gray-700">Garage Work Log</h2>
+                <div id="job-card-container" class="space-y-4">
+                    </div>
+            </section>
+
+            <section id="customers" class="content-section hidden bg-white p-6 rounded shadow">
+                <h2 class="text-xl font-bold mb-4">Saved Customers</h2>
+                <ul id="cust-list" class="divide-y"></ul>
+            </section>
+
+            <section id="inventory" class="content-section hidden bg-white p-6 rounded shadow">
+                <h2 class="text-xl font-bold mb-4 text-blue-900">Spare Parts Stock</h2>
+                <div class="flex gap-2 mb-4">
+                    <input id="inv-item" type="text" placeholder="Part Name" class="border p-2 flex-grow">
+                    <input id="inv-qty" type="number" placeholder="Qty" class="border p-2 w-20">
+                    <button onclick="addInv()" class="bg-blue-600 text-white px-4 py-2 rounded">Add</button>
+                </div>
+                <table class="w-full border"><tbody id="inv-table"></tbody></table>
+            </section>
+
+            <section id="finance" class="content-section hidden bg-white p-6 rounded shadow">
+                <h2 class="text-xl font-bold mb-4">Income & Expenses</h2>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <input id="fin-desc" type="text" placeholder="Description" class="border p-2">
+                    <input id="fin-amt" type="number" placeholder="Amount ₹" class="border p-2">
+                    <select id="fin-type" class="border p-2"><option value="income">Income</option><option value="expense">Expense</option></select>
+                    <button onclick="addFin()" class="bg-green-600 text-white rounded">Save</button>
+                </div>
+                <div id="fin-summary" class="font-bold text-lg mb-2"></div>
+                <ul id="fin-list" class="text-sm"></ul>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        let jobCards = JSON.parse(localStorage.getItem('rk_jobcards')) || [];
+        let invData = JSON.parse(localStorage.getItem('rk_inv')) || [];
+        let finData = JSON.parse(localStorage.getItem('rk_fin')) || [];
+
+        function showSection(id) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            renderAll();
+        }
+
+        function addJobCard() {
+            const card = {
+                name: document.getElementById('jc-name').value,
+                plate: document.getElementById('jc-plate').value,
+                car: document.getElementById('jc-car').value,
+                entry: document.getElementById('jc-entry').value,
+                issue: document.getElementById('jc-issue').value,
+                solution: document.getElementById('jc-solution').value,
+                delivery: document.getElementById('jc-delivery').value,
+                id: Date.now()
+            };
+            if(card.name && card.plate) {
+                jobCards.unshift(card);
+                save();
+                // Clear fields
+                ['jc-name','jc-plate','jc-car','jc-entry','jc-issue','jc-solution','jc-delivery'].forEach(i => document.getElementById(i).value = '');
+            }
+        }
+
+        function save() {
+            localStorage.setItem('rk_jobcards', JSON.stringify(jobCards));
+            localStorage.setItem('rk_inv', JSON.stringify(invData));
+            localStorage.setItem('rk_fin', JSON.stringify(finData));
+            renderAll();
+        }
+
+        function renderAll() {
+            // Render Job Cards
+            const container = document.getElementById('job-card-container');
+            container.innerHTML = jobCards.map((jc, index) => `
+                <div class="bg-white border-l-8 border-blue-600 p-5 rounded-lg shadow-md relative">
+                    <button onclick="deleteJC(${index})" class="absolute top-2 right-4 text-red-500 font-bold">Delete Card</button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <p><strong>Customer:</strong> ${jc.name}</p>
+                        <p><strong>Vehicle:</strong> ${jc.car} (${jc.plate})</p>
+                        <p class="text-sm text-gray-500"><strong>Entry Date:</strong> ${jc.entry || 'N/A'}</p>
+                        <p class="text-sm text-green-600 font-bold"><strong>Delivery:</strong> ${jc.delivery || 'TBD'}</p>
+                    </div>
+                    <div class="mt-3 p-3 bg-red-50 rounded">
+                        <p class="text-sm"><strong>⚠️ The Issue:</strong> ${jc.issue}</p>
+                    </div>
+                    <div class="mt-2 p-3 bg-green-50 rounded">
+                        <p class="text-sm"><strong>✅ Solution:</strong> ${jc.solution || 'Pending...'}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            // Quick Inv Render
+            document.getElementById('inv-table').innerHTML = invData.map(i => `<tr><td class="p-2 border">${i.item}</td><td class="p-2 border">${i.qty}</td></tr>`).join('');
+            
+            // Quick Fin Render
+            const income = finData.filter(f=>f.type==='income').reduce((a,b)=>a+b.amt, 0);
+            const expense = finData.filter(f=>f.type==='expense').reduce((a,b)=>a+b.amt, 0);
+            document.getElementById('fin-summary').innerText = `Profit: ₹${income - expense} (In: ₹${income} | Out: ₹${expense})`;
+        }
+
+        function deleteJC(i) { if(confirm('Delete this card?')) { jobCards.splice(i,1); save(); } }
+        
+        // Helper Functions for Inv/Fin
+        function addInv() { 
+            const item = document.getElementById('inv-item').value;
+            const qty = document.getElementById('inv-qty').value;
+            if(item) { invData.push({item, qty}); save(); }
+        }
+        function addFin() {
+            const desc = document.getElementById('fin-desc').value;
+            const amt = parseFloat(document.getElementById('fin-amt').value);
+            const type = document.getElementById('fin-type').value;
+            if(desc && amt) { finData.push({desc, amt, type}); save(); }
+        }
+
+        showSection('jobcards');
+    </script>
+</body>
+</html>
